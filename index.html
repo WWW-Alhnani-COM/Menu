@@ -3,408 +3,531 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Control - الإدارة العليا</title>
+    <title>لوحة تحكم MenuNow</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <script src="../js/firebase-config.js"></script>
-
+    
     <style>
-        :root { --primary: #FF6B00; --bg: #1a1a1a; --card-bg: #2d2d2d; --text: #eee; --border: #444; }
-        
-        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; }
-        body { background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        
-        .container { max-width: 1400px; margin: 0 auto; }
-        
-        /* الهيدر */
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-            background: var(--card-bg); padding: 20px; border-radius: 15px;
-            margin-bottom: 30px; border-right: 5px solid var(--primary);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        :root {
+            --primary: #FF6B00;
+            --text: #333;
+            --bg: #f4f6f8;
+            --white: #fff;
+            --sidebar-width: 260px;
         }
 
-        /* البطاقات */
-        .card {
-            background: var(--card-bg); padding: 25px; border-radius: 15px;
-            margin-bottom: 25px; border: 1px solid var(--border);
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+
+        /* تعديل الأيقونات لتظهر بشكل صحيح */
+        .fas, .fa-solid { font-family: "Font Awesome 6 Free"; font-weight: 900; }
+        .fab, .fa-brands { font-family: "Font Awesome 6 Brands"; font-weight: 400; }
+
+        body { background-color: var(--bg); color: var(--text); }
+
+        .admin-wrapper { display: flex; min-height: 100vh; }
+
+        /* الشريط الجانبي */
+        .sidebar {
+            width: var(--sidebar-width); background: var(--white); height: 100vh;
+            position: fixed; top: 0; right: 0; padding: 2rem 1.5rem;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.05); display: flex; flex-direction: column;
+            z-index: 100; transition: 0.3s;
+        }
+
+        .logo { font-size: 1.8rem; font-weight: 800; color: var(--primary); text-align: center; margin-bottom: 3rem; }
+
+        .nav-link {
+            display: flex; align-items: center; gap: 15px; padding: 1rem;
+            color: #666; text-decoration: none; border-radius: 12px; margin-bottom: 0.8rem;
+            transition: 0.3s; cursor: pointer; font-weight: 600;
+        }
+        .nav-link:hover, .nav-link.active { background: rgba(255, 107, 0, 0.1); color: var(--primary); }
+        .nav-link i { font-size: 1.2rem; width: 25px; text-align: center; }
+
+        .logout-btn {
+            margin-top: auto; background: #ffe5e5; color: #d32f2f; border: none;
+            padding: 1rem; border-radius: 12px; cursor: pointer; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;
+        }
+
+        /* المحتوى الرئيسي */
+        .main-content { flex: 1; margin-right: var(--sidebar-width); padding: 2rem; transition: 0.3s; }
+
+        .admin-section { display: none; animation: fadeIn 0.4s; }
+        .admin-section.active { display: block; }
+
+        .admin-card {
+            background: var(--white); padding: 2rem; border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03); margin-bottom: 20px;
+        }
+
+        /* الجداول والنماذج */
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th, td { padding: 1rem; text-align: right; border-bottom: 1px solid #eee; }
+        th { color: #888; font-size: 0.9rem; }
+        .table-responsive { overflow-x: auto; }
+
+        .form-control {
+            width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px;
+            outline: none; font-family: 'Cairo', sans-serif;
+        }
+        .btn-primary {
+            background: var(--primary); color: white; border: none; padding: 12px 20px;
+            border-radius: 10px; cursor: pointer; font-weight: 700; transition: 0.2s;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+
+        /* تنسيق أيقونات التواصل */
+        .social-input-group {
+            position: relative;
+        }
+        .social-input-group i {
+            position: absolute; top: 50%; right: 15px; transform: translateY(-50%);
+            font-size: 1.2rem;
+            z-index: 10; /* لضمان ظهور الأيقونة فوق الحقل */
         }
         
-        h2, h3 { margin-top: 0; color: #fff; }
+        /* تلوين الأيقونات داخل حقول الإدخال */
+        .social-input-group .fa-whatsapp { color: #25D366; }
+        .social-input-group .fa-instagram { color: #E1306C; }
+        .social-input-group .fa-snapchat { color: #FFFC00; text-shadow: 0 0 1px #000; } /* لون أصفر مع ظل لتوضيحه */
+        .social-input-group .fa-tiktok { color: #000; }
+
+        .social-input-group input { padding-right: 45px; }
+
+        /* تجاوب الجوال */
+        @media (max-width: 768px) {
+            .admin-wrapper { flex-direction: column; }
+            .sidebar {
+                width: 100%; height: 70px; bottom: 0; top: auto; right: 0;
+                flex-direction: row; justify-content: space-around; align-items: center;
+                padding: 0 10px; box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
+                border-top-left-radius: 20px; border-top-right-radius: 20px;
+            }
+            .logo { display: none; }
+            .nav-link { flex-direction: column; gap: 5px; font-size: 0.75rem; padding: 8px; margin: 0; }
+            .nav-link i { font-size: 1.3rem; width: auto; }
+            .logout-btn { width: auto; padding: 8px; margin: 0; background: transparent; color: #d32f2f; }
+            .logout-btn span { display: none; }
+            .logout-btn i { font-size: 1.3rem; }
+            .main-content { margin-right: 0; padding: 1rem; padding-bottom: 90px; }
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* الجدول */
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { padding: 15px; text-align: right; border-bottom: 1px solid var(--border); vertical-align: middle; }
-        th { color: #aaa; font-size: 0.9rem; background: #252525; }
-        tr:hover { background: #353535; }
-        
-        /* الأزرار */
-        .btn {
-            padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer;
-            font-weight: bold; transition: 0.2s; display: inline-flex; align-items: center; gap: 5px;
-        }
-        .btn-create { background: var(--primary); color: white; width: 100%; padding: 12px; font-size: 1.1rem; justify-content: center; margin-top: 15px; }
-        .btn-delete { background: #ff4757; color: white; }
-        .btn-edit { background: #2ed573; color: white; }
-        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-
-        /* حالة المطعم */
-        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
-        .open { background: rgba(46, 213, 115, 0.2); color: #2ed573; }
-        .closed { background: rgba(255, 71, 87, 0.2); color: #ff4757; }
-
-        /* نموذج الإضافة والتعديل */
-        .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
-        .input-group label { display: block; margin-bottom: 8px; color: #bbb; font-size: 0.9rem; }
-        input, select {
-            background: #404040; border: 1px solid var(--border); color: white;
-            padding: 12px; border-radius: 8px; width: 100%; outline: none;
-        }
-        input:focus { border-color: var(--primary); }
-
-        /* أيقونات التواصل */
-        .social-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border); }
-        .social-input-wrapper { position: relative; }
-        .social-input-wrapper i { position: absolute; top: 50%; right: 12px; transform: translateY(-50%); color: #888; }
-        .social-input-wrapper input { padding-right: 35px; font-size: 0.9rem; }
-
-        /* مودال التعديل */
-        .modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;
-        }
-        .modal-content {
-            background: #2d2d2d; padding: 30px; border-radius: 15px; width: 90%; max-width: 800px;
-            max-height: 90vh; overflow-y: auto; border: 1px solid var(--border);
+        #loadingOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            font-size: 1.2rem; color: var(--primary); gap: 15px;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="header">
-            <div>
-                <h1 style="margin:0; font-size:1.8rem;">Master Control <span style="color:var(--primary)">V2</span></h1>
-                <small style="color:#aaa;">لوحة التحكم الشاملة لجميع المطاعم</small>
-            </div>
-            <div id="connectionStatus" style="color: #2ed573; font-weight:bold;">
-                <i class="fas fa-wifi"></i> متصل
-            </div>
-        </div>
+    <div id="loadingOverlay">
+        <i class="fas fa-circle-notch fa-spin fa-2x"></i>
+        <span>جاري التحميل...</span>
+    </div>
 
-        <div class="card">
-            <h3><i class="fas fa-store"></i> تسجيل مطعم جديد</h3>
-            <div class="grid-form">
-                <div class="input-group">
-                    <label>البريد الإلكتروني</label>
-                    <input type="email" id="newEmail" placeholder="email@example.com">
-                </div>
-                <div class="input-group">
-                    <label>كلمة المرور</label>
-                    <input type="text" id="newPass" placeholder="******">
-                </div>
-            </div>
+    <div class="admin-wrapper">
+        <div class="sidebar">
+            <div class="logo">MenuNow</div>
             
-            <div class="social-inputs">
-                <div class="social-input-wrapper"><i class="fab fa-whatsapp"></i><input type="text" id="newWa" placeholder="واتساب (966..)"></div>
-                <div class="social-input-wrapper"><i class="fab fa-instagram"></i><input type="text" id="newInsta" placeholder="رابط انستقرام"></div>
-                <div class="social-input-wrapper"><i class="fab fa-snapchat"></i><input type="text" id="newSnap" placeholder="رابط سناب"></div>
-                <div class="social-input-wrapper"><i class="fab fa-tiktok"></i><input type="text" id="newTiktok" placeholder="رابط تيك توك"></div>
-            </div>
-
-            <button onclick="createAccount()" class="btn btn-create">
-                <i class="fas fa-plus-circle"></i> إنشاء الحساب وحفظ البيانات
+            <a class="nav-link active" onclick="showSection('dashboard', this)">
+                <i class="fas fa-chart-pie"></i> <span>الرئيسية</span>
+            </a>
+            <a class="nav-link" onclick="showSection('products', this)">
+                <i class="fas fa-hamburger"></i> <span>المنتجات</span>
+            </a>
+            <a class="nav-link" onclick="showSection('categories', this)">
+                <i class="fas fa-layer-group"></i> <span>الأقسام</span>
+            </a>
+            <a class="nav-link" onclick="showSection('settings', this)">
+                <i class="fas fa-cog"></i> <span>الإعدادات</span>
+            </a>
+            
+            <button onclick="logout()" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> <span>خروج</span>
             </button>
         </div>
 
-        <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3><i class="fas fa-list"></i> جميع المطاعم المسجلة (<span id="count">0</span>)</h3>
-                <input type="text" placeholder="بحث..." style="width:200px; padding:8px;" onkeyup="filterTable(this.value)">
+        <div class="main-content">
+            
+            <div id="dashboard" class="admin-section active">
+                <h2 style="margin-bottom: 1.5rem;">لوحة التحكم العامة</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <div class="stat-card admin-card" style="display:flex; align-items:center; gap:15px;">
+                        <div style="background:rgba(255,107,0,0.1); width:50px; height:50px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:var(--primary); font-size:1.5rem;">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <div>
+                            <div style="color:#888; font-size:0.9rem;">المنتجات</div>
+                            <div id="totalProductsCount" style="font-size:1.4rem; font-weight:800;">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card admin-card" style="display:flex; align-items:center; gap:15px;">
+                        <div style="background:rgba(0,123,255,0.1); width:50px; height:50px; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#007bff; font-size:1.5rem;">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <div>
+                            <div style="color:#888; font-size:0.9rem;">الأقسام</div>
+                            <div id="totalCategoriesCount" style="font-size:1.4rem; font-weight:800;">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-card">
+                    <h3><i class="fas fa-qrcode"></i> رابط المنيو</h3>
+                    <p style="color: #666; margin: 10px 0;">رابط المنيو الخاص بك للزبائن:</p>
+                    <button class="btn-primary" onclick="generateQR()" style="width:100%;">عرض الرابط والباركود</button>
+                    <div id="qrContainer" style="margin-top: 1.5rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;"></div>
+                </div>
             </div>
-            <div style="overflow-x:auto;">
-                <table id="mainTable">
-                    <thead>
-                        <tr>
-                            <th>المطعم</th>
-                            <th>بيانات الدخول</th>
-                            <th>الحالة</th>
-                            <th>الروابط</th>
-                            <th>إجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody id="restList">
-                        <tr><td colspan="5" style="text-align:center">جاري التحميل...</td></tr>
-                    </tbody>
-                </table>
+
+            <div id="products" class="admin-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2>إدارة المنتجات</h2>
+                    <button class="btn-primary" onclick="document.getElementById('addProductModal').style.display='flex'">
+                        <i class="fas fa-plus"></i> إضافة
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="admin-card">
+                        <thead>
+                            <tr>
+                                <th>صورة</th><th>الاسم</th><th>القسم</th><th>السعر</th><th>حذف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminProductsTable"></tbody>
+                    </table>
+                </div>
             </div>
+
+            <div id="categories" class="admin-section">
+                <h2 style="margin-bottom: 1.5rem;">إدارة الأقسام</h2>
+                <div class="admin-card"> 
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 12px; border: 1px solid #eee; margin-bottom: 20px;">
+                        <label style="font-weight:700; display:block; margin-bottom:10px;">إضافة قسم جديد</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="newCatName" class="form-control" placeholder="اسم القسم..."> 
+                            <button class="btn-primary" onclick="addCategory()"><i class="fas fa-check"></i></button>
+                        </div>
+                    </div>
+                    <div id="adminCategoriesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;"></div>
+                </div>
+            </div>
+
+            <div id="settings" class="admin-section">
+                <h2 style="margin-bottom: 1.5rem;">إعدادات المطعم</h2>
+                <div class="admin-card">
+                    <div style="display: grid; gap: 20px;">
+                        
+                        <h3 style="color:#666; border-bottom:1px solid #eee; padding-bottom:10px;">معلومات أساسية</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                            <div>
+                                <label style="font-weight:700; display:block; margin-bottom:5px;">اسم المطعم</label>
+                                <input type="text" id="restName" class="form-control" placeholder="اكتب اسم المطعم...">
+                            </div>
+                            <div>
+                                <label style="font-weight:700; display:block; margin-bottom:5px;">العملة</label>
+                                <input type="text" id="restCurrency" class="form-control" placeholder="ر.س">
+                            </div>
+                            <div>
+                                <label style="font-weight:700; display:block; margin-bottom:5px;">حالة المطعم</label>
+                                <select id="restStatus" class="form-control">
+                                    <option value="open">🟢 مفتوح</option>
+                                    <option value="closed">🔴 مغلق</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <h3 style="color:#666; border-bottom:1px solid #eee; padding-bottom:10px; margin-top:10px;">روابط التواصل الاجتماعي</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                            
+                            <div>
+                                <label style="font-weight:700; display:block; margin-bottom:5px;">واتساب</label>
+                                <div class="social-input-group">
+                                    <i class="fab fa-whatsapp"></i>
+                                    <input type="text" id="socialWhatsapp" class="form-control" placeholder="9665xxxxxxxx">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label style="font-weight:700; display:block; margin-bottom:5px;">انستقرام</label>
+                                <div class="social-input-group">
+                                    <i class="fab fa-instagram"></i>
+                                    <input type="text" id="socialInsta" class="form-control" placeholder="https://instagram.com/...">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label style="font-weight:700; display:block; margin-bottom:5px;">سناب شات</label>
+                                <div class="social-input-group">
+                                    <i class="fab fa-snapchat"></i>
+                                    <input type="text" id="socialSnap" class="form-control" placeholder="https://snapchat.com/...">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label style="font-weight:700; display:block; margin-bottom:5px;">تيك توك</label>
+                                <div class="social-input-group">
+                                    <i class="fab fa-tiktok"></i>
+                                    <input type="text" id="socialTiktok" class="form-control" placeholder="https://tiktok.com/...">
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div style="background:#e3f2fd; padding:15px; border-radius:10px; border:1px solid #90caf9; margin-top:10px;">
+                            <label style="font-weight:700; display:block; margin-bottom:5px; color:#1565c0;">نظام الطلبات</label>
+                            <select id="orderingStatus" class="form-control">
+                                <option value="true">✅ مفعل (استقبال طلبات)</option>
+                                <option value="false">⛔ معطل (للعرض فقط)</option>
+                            </select>
+                        </div>
+
+                        <button class="btn-primary" onclick="saveSettings()" style="margin-top:10px; width: 100%;">
+                            <i class="fas fa-save"></i> حفظ التغييرات
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-                <h3>تعديل بيانات المطعم</h3>
-                <i class="fas fa-times" onclick="closeEditModal()" style="cursor:pointer; font-size:1.5rem;"></i>
+    <div id="addProductModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; align-items:center; justify-content:center; padding: 20px;">
+        <div class="admin-card" style="width:100%; max-width:500px; max-height: 90vh; overflow-y: auto;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem; align-items:center;">
+                <h3>منتج جديد</h3>
+                <i class="fas fa-times" onclick="document.getElementById('addProductModal').style.display='none'" style="cursor:pointer; font-size:1.5rem; color:#888;"></i>
             </div>
-            
-            <input type="hidden" id="editUid">
-            
-            <div class="grid-form">
-                <div class="input-group">
-                    <label>اسم المطعم</label>
-                    <input type="text" id="editName">
-                </div>
-                <div class="input-group">
-                    <label>العملة</label>
-                    <input type="text" id="editCurrency">
-                </div>
-                <div class="input-group">
-                    <label>حالة المطعم</label>
-                    <select id="editStatus">
-                        <option value="open">🟢 مفتوح</option>
-                        <option value="closed">🔴 مغلق</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>نظام الطلبات</label>
-                    <select id="editOrdering">
-                        <option value="true">✅ مفعل</option>
-                        <option value="false">⛔ معطل</option>
-                    </select>
-                </div>
-                
-                <div class="input-group" style="grid-column: 1 / -1; border-top:1px solid #444; padding-top:10px; margin-top:10px;">
-                    <label style="color:#fab1a0">تعديل كلمة المرور (للعرض فقط)</label>
-                    <input type="text" id="editSavedPass" placeholder="اكتب كلمة المرور الجديدة لحفظها هنا">
-                    <small style="color:#888;">* هذا يغير الكلمة المسجلة في قاعدة البيانات للعرض، لتغيير الدخول الفعلي استخدم لوحة فيربيس أو إعادة تعيين.</small>
-                </div>
-            </div>
-
-            <h4 style="margin:20px 0 10px; border-bottom:1px solid #444; padding-bottom:5px;">روابط التواصل</h4>
-            <div class="social-inputs">
-                <div class="social-input-wrapper"><i class="fab fa-whatsapp"></i><input type="text" id="editWa"></div>
-                <div class="social-input-wrapper"><i class="fab fa-instagram"></i><input type="text" id="editInsta"></div>
-                <div class="social-input-wrapper"><i class="fab fa-snapchat"></i><input type="text" id="editSnap"></div>
-                <div class="social-input-wrapper"><i class="fab fa-tiktok"></i><input type="text" id="editTiktok"></div>
-            </div>
-
-            <button onclick="saveEdit()" class="btn btn-create" style="background:#2ed573; margin-top:20px;">
-                <i class="fas fa-save"></i> حفظ التغييرات
-            </button>
+            <form onsubmit="addProduct(event)" style="display:grid; gap:15px;">
+                <div><label>اسم المنتج</label><input type="text" id="pName" class="form-control" required></div>
+                <div><label>السعر</label><input type="number" id="pPrice" class="form-control" required></div>
+                <div><label>القسم</label><select id="pCategory" class="form-control" required></select></div>
+                <div><label>الصورة</label><input type="file" id="imageFile" class="form-control" accept="image/*"></div>
+                <button type="submit" class="btn-primary" style="width:100%;">حفظ المنتج</button>
+            </form>
         </div>
     </div>
 
     <script>
-        // بيانات الدخول للأدمن الرئيسي
-        const ADMIN_EMAIL = "admin@menunow.com"; 
-        const ADMIN_PASS = "123456"; 
+        let currentUser = null;
 
-        // تسجيل الدخول التلقائي
+        // التحقق من الدخول
         auth.onAuthStateChanged(user => {
-            if (!user) {
-                auth.signInWithEmailAndPassword(ADMIN_EMAIL, ADMIN_PASS).catch(e => console.log(e));
+            if (user) {
+                currentUser = user;
+                loadDashboardData();
+                loadSettings(); 
+                document.getElementById('loadingOverlay').style.display = 'none';
             } else {
-                loadRestaurants();
+                window.location.href = 'login.html';
             }
         });
 
-        // 1. إنشاء حساب جديد
-        async function createAccount() {
-            const email = document.getElementById('newEmail').value;
-            const pass = document.getElementById('newPass').value;
-            const wa = document.getElementById('newWa').value;
-            const insta = document.getElementById('newInsta').value;
-            const snap = document.getElementById('newSnap').value;
-            const tiktok = document.getElementById('newTiktok').value;
-            const btn = document.querySelector('.btn-create');
-
-            if(!email || !pass) return alert("أدخل البريد وكلمة المرور!");
-
-            btn.innerText = "جاري العمل...";
+        // ------------------------------------------------------------------
+        // دالة توليد الباركود
+        // ------------------------------------------------------------------
+        function generateQR() {
+            if(!currentUser) return;
             
-            try {
-                // إنشاء في Authentication
-                const secondaryApp = firebase.initializeApp(firebaseConfig, "Secondary");
-                const userCred = await secondaryApp.auth().createUserWithEmailAndPassword(email, pass);
-                const uid = userCred.user.uid;
+            const qrContainer = document.getElementById('qrContainer');
+            qrContainer.innerHTML = ''; 
 
-                // حفظ البيانات كاملة
-                await db.collection('restaurants').doc(uid).set({
-                    owner_id: uid,
-                    email: email,
-                    saved_password: pass, // حفظ الباسوورد
-                    name: "مطعم جديد",
-                    currency: "ر.س",
-                    status: "open",
-                    ordering_enabled: true,
-                    created_at: firebase.firestore.FieldValue.serverTimestamp(),
-                    social: { whatsapp: wa, instagram: insta, snapchat: snap, tiktok: tiktok }
-                });
-
-                secondaryApp.auth().signOut();
-                secondaryApp.delete();
-
-                alert("تم الإنشاء بنجاح!");
-                location.reload(); // تحديث لتفريغ الحقول
-            } catch (err) {
-                alert("خطأ: " + err.message);
-            } finally {
-                btn.innerHTML = '<i class="fas fa-plus-circle"></i> إنشاء الحساب وحفظ البيانات';
+            const path = window.location.pathname;
+            const adminFolderIndex = path.indexOf('/admin/');
+            let rootPath = path;
+            
+            if (adminFolderIndex !== -1) {
+                rootPath = path.substring(0, adminFolderIndex); 
+            } else {
+                rootPath = path.substring(0, path.lastIndexOf('/'));
             }
+
+            if(rootPath === '/') rootPath = '';
+
+            const menuLink = `${window.location.origin}${rootPath}/menu.html?id=${currentUser.uid}`;
+
+            new QRCode(qrContainer, {
+                text: menuLink,
+                width: 150,
+                height: 150,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            const linkElem = document.createElement('div');
+            linkElem.style.marginTop = '10px';
+            linkElem.innerHTML = `<a href="${menuLink}" target="_blank" style="color:var(--primary); font-weight:bold; word-break:break-all;">${menuLink}</a>`;
+            qrContainer.appendChild(linkElem);
         }
 
-        // 2. عرض المطاعم
-        function loadRestaurants() {
-            db.collection('restaurants').orderBy('created_at', 'desc').onSnapshot(snap => {
-                const tbody = document.getElementById('restList');
-                tbody.innerHTML = '';
-                let count = 0;
+        // ------------------------------------------------------------------
+        // التنقل بين الأقسام
+        // ------------------------------------------------------------------
+        
+        function showSection(sectionId, element) {
+            document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            if(element) element.classList.add('active');
 
-                snap.forEach(doc => {
+            if(sectionId === 'products') loadProducts();
+            if(sectionId === 'categories') loadCategories();
+        }
+
+        function logout() {
+            auth.signOut().then(() => window.location.href = 'login.html');
+        }
+
+        // ------------------------------------------------------------------
+        // حفظ واسترجاع الإعدادات
+        // ------------------------------------------------------------------
+
+        async function loadSettings() {
+            if (!currentUser) return;
+            try {
+                const doc = await db.collection('restaurants').doc(currentUser.uid).get();
+                if (doc.exists) {
                     const data = doc.data();
-                    if(data.email === ADMIN_EMAIL) return; // إخفاء الأدمن
+                    document.getElementById('restName').value = data.name || '';
+                    document.getElementById('restCurrency').value = data.currency || '';
+                    document.getElementById('restStatus').value = data.status || 'open';
+                    document.getElementById('orderingStatus').value = data.ordering_enabled ? 'true' : 'false';
 
-                    count++;
-                    const statusClass = data.status === 'open' ? 'open' : 'closed';
-                    const statusText = data.status === 'open' ? 'مفتوح' : 'مغلق';
-                    const social = data.social || {};
+                    if (data.social) {
+                        document.getElementById('socialWhatsapp').value = data.social.whatsapp || '';
+                        document.getElementById('socialInsta').value = data.social.instagram || '';
+                        document.getElementById('socialSnap').value = data.social.snapchat || '';
+                        document.getElementById('socialTiktok').value = data.social.tiktok || '';
+                    }
+                }
+            } catch (error) { console.error("Error loading settings:", error); }
+        }
 
-                    // أيقونات الروابط الموجودة
-                    let socialIcons = '';
-                    if(social.whatsapp) socialIcons += '<i class="fab fa-whatsapp" style="color:#25D366; margin-left:5px;"></i>';
-                    if(social.instagram) socialIcons += '<i class="fab fa-instagram" style="color:#E1306C; margin-left:5px;"></i>';
-                    if(social.snapchat) socialIcons += '<i class="fab fa-snapchat" style="color:#FFFC00; margin-left:5px;"></i>';
-                    if(social.tiktok) socialIcons += '<i class="fab fa-tiktok" style="color:#fff; margin-left:5px;"></i>';
+        async function saveSettings() {
+            const name = document.getElementById('restName').value;
+            const currency = document.getElementById('restCurrency').value;
+            const status = document.getElementById('restStatus').value;
+            const ordering = document.getElementById('orderingStatus').value === 'true';
+            
+            const social = {
+                whatsapp: document.getElementById('socialWhatsapp').value,
+                instagram: document.getElementById('socialInsta').value,
+                snapchat: document.getElementById('socialSnap').value,
+                tiktok: document.getElementById('socialTiktok').value
+            };
 
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>
-                                <div style="font-weight:bold; font-size:1.1rem;">${data.name || 'بدون اسم'}</div>
-                                <div style="color:#888; font-size:0.8rem;">${doc.id}</div>
-                            </td>
-                            <td>
-                                <div>${data.email}</div>
-                                <div style="color:#fab1a0; font-family:monospace;">Pass: ${data.saved_password || '---'}</div>
-                            </td>
-                            <td>
-                                <span class="status-badge ${statusClass}">${statusText}</span>
-                                <div style="font-size:0.8rem; margin-top:5px;">${data.ordering_enabled ? '✅ طلبات' : '⛔ عرض'}</div>
-                            </td>
-                            <td>${socialIcons || 'لا يوجد'}</td>
-                            <td>
-                                <button class="btn btn-edit" onclick="openEditModal('${doc.id}')"><i class="fas fa-edit"></i></button>
-                                <button class="btn btn-delete" onclick="deleteRestaurant('${doc.id}', '${data.name}')"><i class="fas fa-trash"></i></button>
-                            </td>
-                        </tr>
-                    `;
+            const btn = document.querySelector('#settings .btn-primary');
+            btn.innerHTML = 'جاري الحفظ...'; btn.disabled = true;
+
+            try {
+                await db.collection('restaurants').doc(currentUser.uid).update({
+                    name, currency, status, ordering_enabled: ordering, social
                 });
-                document.getElementById('count').innerText = count;
+                alert('✅ تم الحفظ!');
+            } catch (e) { alert('خطأ في الحفظ'); }
+            finally { btn.innerHTML = '<i class="fas fa-save"></i> حفظ التغييرات'; btn.disabled = false; }
+        }
+
+        // دوال المنتجات والأقسام
+        async function loadDashboardData() {
+            db.collection('products').where('restaurant_id', '==', currentUser.uid).get().then(snap => {
+                document.getElementById('totalProductsCount').innerText = snap.size;
+            });
+            db.collection('categories').where('restaurant_id', '==', currentUser.uid).get().then(snap => {
+                document.getElementById('totalCategoriesCount').innerText = snap.size;
             });
         }
 
-        // 3. فتح نافذة التعديل
-        async function openEditModal(uid) {
-            const doc = await db.collection('restaurants').doc(uid).get();
-            const data = doc.data();
-            const social = data.social || {};
-
-            document.getElementById('editUid').value = uid;
-            document.getElementById('editName').value = data.name || '';
-            document.getElementById('editCurrency').value = data.currency || '';
-            document.getElementById('editStatus').value = data.status || 'open';
-            document.getElementById('editOrdering').value = data.ordering_enabled ? 'true' : 'false';
-            document.getElementById('editSavedPass').value = data.saved_password || '';
-
-            document.getElementById('editWa').value = social.whatsapp || '';
-            document.getElementById('editInsta').value = social.instagram || '';
-            document.getElementById('editSnap').value = social.snapchat || '';
-            document.getElementById('editTiktok').value = social.tiktok || '';
-
-            document.getElementById('editModal').style.display = 'flex';
+        async function addCategory() {
+            const name = document.getElementById('newCatName').value;
+            if(!name) return;
+            await db.collection('categories').add({
+                name, restaurant_id: currentUser.uid, created_at: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            document.getElementById('newCatName').value = '';
+            loadCategories();
         }
 
-        function closeEditModal() {
-            document.getElementById('editModal').style.display = 'none';
-        }
-
-        // 4. حفظ التعديلات
-        async function saveEdit() {
-            const uid = document.getElementById('editUid').value;
-            
-            const updateData = {
-                name: document.getElementById('editName').value,
-                currency: document.getElementById('editCurrency').value,
-                status: document.getElementById('editStatus').value,
-                ordering_enabled: document.getElementById('editOrdering').value === 'true',
-                saved_password: document.getElementById('editSavedPass').value, // تحديث الباسوورد
-                social: {
-                    whatsapp: document.getElementById('editWa').value,
-                    instagram: document.getElementById('editInsta').value,
-                    snapchat: document.getElementById('editSnap').value,
-                    tiktok: document.getElementById('editTiktok').value
-                }
-            };
-
-            try {
-                await db.collection('restaurants').doc(uid).update(updateData);
-                alert("تم التعديل بنجاح!");
-                closeEditModal();
-            } catch(e) {
-                alert("خطأ: " + e.message);
-            }
-        }
-
-        // 5. حذف مطعم بالكامل
-        async function deleteRestaurant(uid, name) {
-            const confirmCode = prompt(`تحذير: سيتم حذف المطعم والمنتجات والأقسام نهائياً!\n\nلحذف "${name}"، اكتب كلمة "حذف":`);
-            if(confirmCode !== "حذف") return;
-
-            try {
-                const batch = db.batch();
+        function loadCategories() {
+            db.collection('categories').where('restaurant_id', '==', currentUser.uid).onSnapshot(snapshot => {
+                const list = document.getElementById('adminCategoriesList');
+                const pCat = document.getElementById('pCategory');
+                list.innerHTML = ''; pCat.innerHTML = '<option value="">اختر القسم</option>';
                 
-                // حذف المنتجات
-                const prods = await db.collection('products').where('restaurant_id', '==', uid).get();
-                prods.forEach(doc => batch.delete(doc.ref));
-
-                // حذف الأقسام
-                const cats = await db.collection('categories').where('restaurant_id', '==', uid).get();
-                cats.forEach(doc => batch.delete(doc.ref));
-
-                // حذف المطعم
-                batch.delete(db.collection('restaurants').doc(uid));
-
-                await batch.commit();
-                alert("تم الحذف.");
-            } catch(e) {
-                alert("خطأ: " + e.message);
-            }
+                snapshot.forEach(doc => {
+                    const c = doc.data();
+                    list.innerHTML += `<div style="background:#fff; padding:10px; border:1px solid #ddd; border-radius:8px; display:flex; justify-content:space-between;">
+                        <span>${c.name}</span>
+                        <i class="fas fa-trash" style="color:red; cursor:pointer;" onclick="deleteDoc('categories', '${doc.id}')"></i>
+                    </div>`;
+                    pCat.innerHTML += `<option value="${doc.id}">${c.name}</option>`;
+                });
+                document.getElementById('totalCategoriesCount').innerText = snapshot.size;
+            });
         }
 
-        // فلترة الجدول
-        function filterTable(text) {
-            const filter = text.toLowerCase();
-            const rows = document.getElementById("mainTable").getElementsByTagName("tr");
-            for (let i = 1; i < rows.length; i++) {
-                let found = false;
-                const cells = rows[i].getElementsByTagName("td");
-                for (let j = 0; j < cells.length; j++) {
-                    if (cells[j].innerText.toLowerCase().indexOf(filter) > -1) {
-                        found = true;
-                        break;
-                    }
-                }
-                rows[i].style.display = found ? "" : "none";
+        function loadProducts() {
+            db.collection('products').where('restaurant_id', '==', currentUser.uid).onSnapshot(snapshot => {
+                const tbody = document.getElementById('adminProductsTable');
+                tbody.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const p = doc.data();
+                    tbody.innerHTML += `<tr>
+                        <td><img src="${p.image || 'https://via.placeholder.com/50'}" width="50" style="border-radius:5px"></td>
+                        <td>${p.name}</td>
+                        <td>${p.category_name || '-'}</td>
+                        <td>${p.price}</td>
+                        <td><i class="fas fa-trash" style="color:red; cursor:pointer;" onclick="deleteDoc('products', '${doc.id}')"></i></td>
+                    </tr>`;
+                });
+                document.getElementById('totalProductsCount').innerText = snapshot.size;
+            });
+        }
+
+        async function addProduct(e) {
+            e.preventDefault();
+            const name = document.getElementById('pName').value;
+            const price = document.getElementById('pPrice').value;
+            const catId = document.getElementById('pCategory').value;
+            const catName = document.getElementById('pCategory').options[document.getElementById('pCategory').selectedIndex].text;
+            const imgFile = document.getElementById('imageFile').files[0];
+            let imageUrl = "";
+
+            await db.collection('products').add({
+                name, price, category_id: catId, category_name: catName, image: imageUrl,
+                restaurant_id: currentUser.uid, created_at: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            document.getElementById('addProductModal').style.display='none';
+            e.target.reset();
+        }
+
+        async function deleteDoc(coll, id) {
+            if(confirm('هل أنت متأكد؟')) {
+                await db.collection(coll).doc(id).delete();
             }
         }
     </script>
-
 </body>
 </html>
