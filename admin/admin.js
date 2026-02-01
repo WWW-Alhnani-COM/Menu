@@ -18,14 +18,14 @@ auth.onAuthStateChanged(async (user) => {
             alert("حدث خطأ في جلب البيانات: " + err.message);
         }
     } else {
-        window.location.href = 'login.html';
+        window.location.href = 'admin/login.html';
     }
 });
 
 // 2. تسجيل الخروج
 function logout() {
     if(confirm('هل تريد الخروج من لوحة التحكم؟')) {
-        auth.signOut().then(() => window.location.href = 'login.html');
+        auth.signOut().then(() => window.location.href = 'admin/login.html');
     }
 }
 
